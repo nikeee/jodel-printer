@@ -1,0 +1,9 @@
+dist/*
+build/*
+*.js.map
+node_modules/
+npm-debug.log
+.settings/
+typings/
+config.json
+*.db*
