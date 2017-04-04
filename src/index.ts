@@ -22,6 +22,7 @@ interface AppConfig {
 		clientVersion: string;
 		apiVersion: "0.2",
 	}
+	printerPath: string;
 }
 
 const converter = new iconv.Iconv("UTF-8", "ISO-8859-1//IGNORE");
@@ -40,30 +41,39 @@ const defaultConfig: Readonly<AppConfig> = {
 		key: "KZmLMUggDeMzQfqMNYFLWNyttEmQgClvlPyACVlH",
 		clientVersion: "4.38.3",
 		apiVersion: "0.2",
-	}
+	},
+	printerPath: "/dev/usb/lp0",
 };
 
 async function main() {
 	log("Hi!");
-
-	log("Initializing printer...");
-	const adapter = new printing.Adapters.Serial("/dev/usb/lp0", {});
-	const printer = await new printing.Printer(adapter).open();
-	printer.setFont(printing.Commands.Font.A);
-	log("Printer initialzed.");
-
 	try {
 		const loadedConfig = await getConfig(configFile).catch(err => null);
 		const currentConfig = { ...defaultConfig, ...loadedConfig };
+
+		const printer = await getPrinter(currentConfig);
+		if (printer === null)
+			console.log("Not printing, no printer path set.");
+
 		const { client, newConfig } = await createClient(currentConfig);
 		log("Logged in.");
 		// now logged in.
 		json.writeFileSync<AppConfig>(configFile, newConfig, { spaces: 4 });
 		printLoop(client, newConfig, printer);
 	} catch (err) {
-		logError("Failed to log in:", err);
-		return;
+		logError("Error:", err);
 	}
+}
+
+async function getPrinter(cfg: AppConfig) {
+	if (!cfg.printerPath)
+		return Promise.resolve(null);
+	log("Initializing printer...");
+	const adapter = new printing.Adapters.Serial(cfg.printerPath, {});
+	const printer = await new printing.Printer(adapter).open();
+	printer.setFont(printing.Commands.Font.A);
+	log("Printer initialzed.");
+	return printer;
 }
 
 async function getConfig(path: string): Promise<AppConfig | null> {
