@@ -48,8 +48,8 @@ async function main() {
 
 	log("Initializing printer...");
 	const adapter = new printing.Adapters.Serial("/dev/usb/lp0", {});
-	// const printer = await new printing.Printer(adapter).open();
-	// printer.setFont(printing.Commands.Font.A);
+	const printer = await new printing.Printer(adapter).open();
+	printer.setFont(printing.Commands.Font.A);
 	log("Printer initialzed.");
 
 	try {
@@ -59,7 +59,7 @@ async function main() {
 		log("Logged in.");
 		// now logged in.
 		json.writeFileSync<AppConfig>(configFile, newConfig, { spaces: 4 });
-		printLoop(client, newConfig, null,/* printer*/);
+		printLoop(client, newConfig, printer);
 	} catch (err) {
 		logError("Failed to log in:", err);
 		return;
