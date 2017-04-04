@@ -47,11 +47,12 @@ const defaultConfig: Readonly<AppConfig> = {
 
 async function main() {
 	log("Hi!");
+	let printer;
 	try {
 		const loadedConfig = await getConfig(configFile).catch(err => null);
 		const currentConfig = { ...defaultConfig, ...loadedConfig };
 
-		const printer = await getPrinter(currentConfig);
+		printer = await getPrinter(currentConfig);
 		if (printer === null)
 			console.log("Not printing, no printer path set.");
 
@@ -63,6 +64,8 @@ async function main() {
 	} catch (err) {
 		logError("Error:", err);
 	}
+	if (printer)
+		await printer.close();
 }
 
 async function getPrinter(cfg: AppConfig) {
