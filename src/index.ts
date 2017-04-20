@@ -142,7 +142,7 @@ async function printLoop(client: Jodel.JodelClient, cfg: AppConfig, printer: pri
 
 			if (filter !== null) {
 				posts = posts.filter((value, index, array) => {
-					return value.message.indexOf(filter) > -1;
+					return !!value.message && value.message.toLowerCase().indexOf(filter) > -1;
 				});
 			}
 
