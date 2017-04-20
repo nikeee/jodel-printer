@@ -7,6 +7,8 @@ import iconv = require("iconv");
 
 const configFile = "config.json";
 
+const filter = "fb16";
+
 const log = console.error;
 function logError(msg: string, err: any) {
 	log(msg);
@@ -64,16 +66,16 @@ async function main() {
 	} catch (err) {
 		logError("Error:", err);
 	}
-	if (printer)
-		await printer.close();
 }
 
 async function getPrinter(cfg: AppConfig) {
 	if (!cfg.printerPath)
 		return Promise.resolve(null);
 	log("Initializing printer...");
-	const adapter = new printing.Adapters.Serial(cfg.printerPath, {});
-	const printer = await new printing.Printer(adapter).open();
+	const adapter = new printing.Adapters.Serial(cfg.printerPath, { autoOpen: true });
+	await adapter.open();
+	const printer = await new printing.Printer(adapter, "ascii").open();
+	//printer.init();
 	printer.setFont(printing.Commands.Font.A);
 	log("Printer initialzed.");
 	return printer;
@@ -138,7 +140,13 @@ async function printLoop(client: Jodel.JodelClient, cfg: AppConfig, printer: pri
 				return !printedPosts.has(value.postId);
 			});
 
-			handlePosts(printer, posts);
+			if (filter !== null) {
+				posts = posts.filter((value, index, array) => {
+					return value.message.indexOf(filter) > -1;
+				});
+			}
+
+			await handlePosts(printer, posts);
 
 			for (const p of posts) {
 				const postDate: Date = p.createdAt instanceof Date ? p.createdAt as Date : new Date(p.createdAt as string);
@@ -176,7 +184,7 @@ function cleanupPrintedPosts(data: Map<string, Date>): void {
 	toRemove = null;
 }
 
-function handlePosts(printer: printing.Printer | null, posts: Jodel.Post[]): void {
+async function handlePosts(printer: printing.Printer | null, posts: Jodel.Post[]): Promise<void> {
 	posts = posts.sort((a, b) => {
 		const ad: Date = a.createdAt instanceof Date ? a.createdAt as Date : new Date(a.createdAt as string);
 		const bd: Date = b.createdAt instanceof Date ? b.createdAt as Date : new Date(b.createdAt as string);
@@ -198,28 +206,31 @@ function handlePosts(printer: printing.Printer | null, posts: Jodel.Post[]): voi
 		log("---------------------");
 
 		if (printer !== null) {
+
 			const emptyLine = new Array(32).join(" ");
 			const message = converter.convert(post.message);
 			const dateStr = cancerDateFormat(date);
 
-			printer.setJustification(printing.Commands.Justification.Left);
-			printer.write(message);
-			printer.writeLine("");
-
-			printer.setJustification(printing.Commands.Justification.Right);
-			printer.writeLine(dateStr);
-			printer.setJustification(printing.Commands.Justification.Left);
-
-			printer.writeLine("");
-
-			printer.setUnderline(printing.Commands.Underline.Single);
-			printer.writeLine(emptyLine);
-			printer.setUnderline(printing.Commands.Underline.NoUnderline);
-			printer.writeLine("");
-			// printer.printText(emptyLine);
-			printer.writeLine("");
+			printer.setJustification(printing.Commands.Justification.Left)
+				.setCodeTable(0x06)
+				.write(message)
+				.writeLine("")
+				.setJustification(printing.Commands.Justification.Right)
+				.writeLine(dateStr)
+				.setJustification(printing.Commands.Justification.Left)
+				.writeLine("")
+				.setUnderline(printing.Commands.Underline.Double)
+				.writeLine(emptyLine)
+				.setUnderline(printing.Commands.Underline.NoUnderline)
+				.writeLine("")
+				/* printer.printText(emptyLine) */
+				.writeLine("");
 		}
 	}
+
+	if (printer)
+		await printer.flush();
+
 }
 
 function rnd(min: number, max: number): number {
