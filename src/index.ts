@@ -38,8 +38,8 @@ const defaultConfig: Readonly<AppConfig> = {
 		locAccuracy: 19.0
 	},
 	keyConfig: {
-		key: "KZmLMUggDeMzQfqMNYFLWNyttEmQgClvlPyACVlH",
-		clientVersion: "4.38.3",
+		key: "hFvMqLauMtnodakokftuKETbIsVLxpqfjAXiRoih",
+		clientVersion: "4.41.0",
 		apiVersion: "0.2",
 	},
 	printerPath: "/dev/usb/lp0",
