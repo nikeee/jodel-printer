@@ -7,8 +7,6 @@ import iconv = require("iconv");
 
 const configFile = "config.json";
 
-const filter = "fb16";
-
 const log = console.error;
 function logError(msg: string, err: any) {
 	log(msg);
@@ -62,10 +60,12 @@ async function main() {
 		log("Logged in.");
 		// now logged in.
 		json.writeFileSync<AppConfig>(configFile, newConfig, { spaces: 4 });
-		printLoop(client, newConfig, printer);
+		await printLoop(client, newConfig, printer);
 	} catch (err) {
 		logError("Error:", err);
 	}
+	if (printer)
+		await printer.close();
 }
 
 async function getPrinter(cfg: AppConfig) {
@@ -139,12 +139,6 @@ async function printLoop(client: Jodel.JodelClient, cfg: AppConfig, printer: pri
 			posts = posts.filter((value, index, array) => {
 				return !printedPosts.has(value.postId);
 			});
-
-			if (filter !== null) {
-				posts = posts.filter((value, index, array) => {
-					return !!value.message && value.message.toLowerCase().indexOf(filter) > -1;
-				});
-			}
 
 			await handlePosts(printer, posts);
 
